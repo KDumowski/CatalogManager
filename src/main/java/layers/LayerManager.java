@@ -22,6 +22,7 @@ import com.here.platform.data.client.model.VersionDependency;
 import com.here.platform.data.client.settings.ConsumerSettings;
 import com.here.v1.MapScheme;
 import lombok.AllArgsConstructor;
+import partitions.PartitionPredicates;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -191,10 +192,7 @@ public class LayerManager implements ILayerManager {
                         .getPartitions(version, layerId, AdditionalFields.AllFields())
                         .thenApply(
                                 metadata ->
-                                        metadata.filter(partition -> {
-                                            List<String> partitionIds = Arrays.asList(partitions);
-                                            return partitionIds.isEmpty() || partitionIds.contains(partition.getPartition());
-                                        })
+                                        metadata.filter(PartitionPredicates.isPartitionWithinPartitions(partitions))
                                         .mapAsync(
                                                 parallelism,
                                                 partition ->
@@ -248,12 +246,15 @@ public class LayerManager implements ILayerManager {
     }
 
     private byte[] createStreamPartitionData(int i) {
+        return createMapSchemeData(50, 50 ,50).toByteArray();
+    }
+
+    private static MapScheme.MainProtobufMessage createMapSchemeData(int lat, int lon, int alt) {
         return MapScheme.MainProtobufMessage.newBuilder()
                 .setAlt(1)
                 .setLat(2)
                 .setLon(3)
-                .build()
-                .toByteArray();
+                .build();
     }
 
     private void processPartition(Partition partition) {
